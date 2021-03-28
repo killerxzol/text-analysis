@@ -72,7 +72,6 @@ def text_analysis(texts):
 
 def text_statistic(words, parts, texts):
     data = pd.DataFrame()
-    texts = [sent_tokenize(text, language='russian') for text in texts]
     data['Sentences'] = [len(text) for text in parts]
     data['Words'] = [sum(len(sent) for sent in text) for text in parts]
     data['Length sum'] = [sum(sum(len(word) for word in sent) for sent in text) for text in words]
@@ -82,9 +81,6 @@ def text_statistic(words, parts, texts):
     data['Adverb'] = [sum(sent.count('ADV') for sent in text) / len(text) for text in parts]
     data['Average word count'] = data['Words'] / data['Sentences']
     data['Average word length'] = data['Length sum'] / data['Words']
-    data['Comma'] = [text.count(',') for text in texts]
-    data['QMark'] = [text.count('!') for text in texts]
-    data['EMark'] = [text.count('?') for text in texts]
     return data.drop(['Sentences', 'Words', 'Length sum'], 1)
 
 
@@ -156,23 +152,13 @@ def decisive_points(x_data, y_data):
 def dependency_plot(x_data, y_data, mp1, mp2, x_data_=None, y_data_=None, step=1):
     f_class = x_data.loc[y_data[y_data == 0].index]
     s_class = x_data.loc[y_data[y_data == 1].index]
-
     plt.figure(figsize=(x_data.iloc[:, 0].max() + step, x_data.iloc[:, 1].max() + step))
     plt.xlim(x_data.iloc[:, 0].min() - step, x_data.iloc[:, 0].max() + step)
     plt.ylim(x_data.iloc[:, 1].min() - step, x_data.iloc[:, 1].max() + step)
-
     plt.scatter(x=f_class.iloc[:, 0], y=f_class.iloc[:, 1], color='red', s=20, label="Бунин")
     plt.scatter(x=s_class.iloc[:, 0], y=s_class.iloc[:, 1], color='blue', s=20, label="Тургненев")
-
-    if x_data_ is not None and y_data_ is not None:
-        f_class_ = x_data_.loc[y_data_[y_data_ == 0].index]
-        s_class_ = x_data_.loc[y_data_[y_data_ == 1].index]
-        plt.scatter(x=f_class_.iloc[:, 0], y=f_class_.iloc[:, 1], color='#FFD7D7', s=20)
-        plt.scatter(x=s_class_.iloc[:, 0], y=s_class_.iloc[:, 1], color='#D7DBFF', s=20)
-
     plt.scatter(mp1[0], mp1[1], color='#D4FF00', s=40)
     plt.scatter(mp2[0], mp2[1], color='#D4FF00', s=40)
-
     x = np.linspace(x_data.iloc[:, 0].min() - step, x_data.iloc[:, 0].max() + step, 10000)
     y = (x - mp1[0]) / (mp2[0] - mp1[0]) * (mp2[1] - mp1[1]) + mp1[1]
     plt.plot(x, y, marker='o', markersize=0.00001, color='green')
@@ -184,12 +170,7 @@ table = table_constructor('Бунин', 'Тургенев')
 raw_text = text_preparation(table['Text'].to_list())
 lem_text, lem_part = text_analysis(raw_text)
 
-# X = pd.concat(text_statistic(lem_text, lem_part, table['Text'].to_list()), axis=1)
-
-#X = X.drop(['Sentences', 'Words', 'Length sum', 'Dot[2]', 'Comma[2]',
-#            'QMark[2]', 'EMark[2]', 'Sentences[2]', 'Words[2]', 'Length sum[2]',
-#            'Average word length[2]', 'Average word count[2]'], 1)
-
+X = text_statistic(lem_text, lem_part, table['Text'].to_list())
 y = table['Binary']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 
@@ -210,14 +191,13 @@ dependency_plot(X_train_, y_train, mp1, mp2, X_test_, y_test)
 # with PCA [SVD]
 
 X_train_pca = X_train - X_train.mean(axis=0)
+X_test_pca = X_test - X_train.mean(axis=0)
 
 u, s, vt = svd(X_train_pca, full_matrices=0)
 Z_train = X_train_pca.dot(vt[:2].T)
+Z_test = X_test_pca.dot(vt[:2].T)
 
 mp1_, mp2_, classes_ = decisive_points(Z_train, y_train)
-
-X_test_pca = X_test - X_train.mean(axis=0)
-Z_test = X_test_pca.dot(vt[:2].T)
 
 result_ = classification(Z_test, classes_, mp1_, mp2_)
 check_ = classification(Z_train, classes_, mp1_, mp2_)
@@ -232,8 +212,3 @@ print("\n")
 print('With PCA:    ', (result_ == y_test.values).mean() * 100)
 print('With PCA (train data):    ', (check_ == y_train.values).mean() * 100)
 print("- - - - - - - - - - - - - - - ")
-
-# wp.append((result == y_test.values).mean() * 100))
-# wpt.append((check == y_train.values).mean() * 100))
-# p.append((result_ == y_test.values).mean() * 100))
-# pt.append((check_ == y_train.values).mean() * 100))
