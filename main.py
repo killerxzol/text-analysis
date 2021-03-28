@@ -70,7 +70,7 @@ def text_analysis(texts):
     return token_texts, part_texts
 
 
-def text_statistic(words, parts, texts):
+def text_statistic(words, parts):
     data = pd.DataFrame()
     data['Sentences'] = [len(text) for text in parts]
     data['Words'] = [sum(len(sent) for sent in text) for text in parts]
@@ -149,7 +149,7 @@ def decisive_points(x_data, y_data):
         return mp1_, mp2_, classes_
 
 
-def dependency_plot(x_data, y_data, mp1, mp2, x_data_=None, y_data_=None, step=1):
+def dependency_plot(x_data, y_data, mp1, mp2, step=1):
     f_class = x_data.loc[y_data[y_data == 0].index]
     s_class = x_data.loc[y_data[y_data == 1].index]
     plt.figure(figsize=(x_data.iloc[:, 0].max() + step, x_data.iloc[:, 1].max() + step))
@@ -170,7 +170,7 @@ table = table_constructor('Бунин', 'Тургенев')
 raw_text = text_preparation(table['Text'].to_list())
 lem_text, lem_part = text_analysis(raw_text)
 
-X = text_statistic(lem_text, lem_part, table['Text'].to_list())
+X = text_statistic(lem_text, lem_part)
 y = table['Binary']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 
@@ -186,7 +186,7 @@ mp1, mp2, classes = decisive_points(X_train_, y_train)
 result = classification(X_test_, classes, mp1, mp2)
 check = classification(X_train_, classes, mp1, mp2)
 
-dependency_plot(X_train_, y_train, mp1, mp2, X_test_, y_test)
+dependency_plot(X_train_, y_train, mp1, mp2)
 
 # with PCA [SVD]
 
@@ -202,7 +202,7 @@ mp1_, mp2_, classes_ = decisive_points(Z_train, y_train)
 result_ = classification(Z_test, classes_, mp1_, mp2_)
 check_ = classification(Z_train, classes_, mp1_, mp2_)
 
-dependency_plot(Z_train, y_train, mp1_, mp2_, Z_test, y_test, step=10)
+dependency_plot(Z_train, y_train, mp1_, mp2_, step=10)
 
 # Results
 print("- - - - - - - - - - - - - - - ")
